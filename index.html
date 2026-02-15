@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Moji App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --accent-color: #00d2ff; /* Яркий голубой для прогресса */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 40px 20px;
+            width: 85%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 1px; }
+        p { font-size: 14px; opacity: 0.7; margin-bottom: 20px; }
+
+        /* Контейнер для круглого прогресса */
+        .progress-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 30px;
+        }
+
+        svg { transform: rotate(-90deg); }
+
+        .circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 12;
+        }
+
+        .circle-progress {
+            fill: none;
+            stroke: var(--accent-color);
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-dasharray: 440; 
+            stroke-dashoffset: 440; 
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 0 8px var(--accent-color));
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .target-label {
+            font-size: 12px;
+            opacity: 0.5;
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glass-card">
+        <h1 id="user-name">Moji App</h1>
+        <p id="status-text">Прогресс до минта</p>
+
+        <div class="progress-container">
+            <svg width="180" height="180">
+                <circle class="circle-bg" cx="90" cy="90" r="70"></circle>
+                <circle id="progress-circle" class="circle-progress" cx="90" cy="90" r="70"></circle>
+            </svg>
+            <div class="progress-text">
+                <span id="score-val">0</span>
+                <span class="target-label">из 1000</span>
+            </div>
+        </div>
+
+        <div id="debug-info" style="font-size: 10px; opacity: 0.3; margin-top: 10px;"></div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем приложение
+        tg.ready();
+
+        // 1. Настройка ID: берем из TG или используем твой для тестов в браузере
+        const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 909987221;
+        
+        // 2. Ссылка на API (пока локальная)
+        const API_URL = `https://65371cea0db3f4a9-178-66-129-174.serveousercontent.com/${userId}`;
+
+        async function loadUserData() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+
+                if (data) {
+                    updateUI(data.total_points, 1000);
+                    if (data.username) {
+                        document.getElementById('user-name').innerText = data.username;
+                    }
+                }
+            } catch (error) {
+                console.error("Ошибка API:", error);
+                document.getElementById('status-text').innerText = "Поиск сигнала...";
+            }
+        }
+
+        function updateUI(score, target) {
+            const circle = document.getElementById('progress-circle');
+            const scoreText = document.getElementById('score-val');
+            
+            // Расчет шкалы (длина окружности r=70 это примерно 440)
+            const maxDash = 440;
+            const progress = Math.min(score / target, 1); // Не больше 100%
+            const offset = maxDash - (progress * maxDash);
+            
+            circle.style.strokeDashoffset = offset;
+            scoreText.innerText = score.toFixed(1); // Показываем 1.4 и т.д.
+
+            if (score >= target) {
+                document.getElementById('status-text').innerText = "Готов к пробуждению! ✨";
+                circle.style.stroke = "#FFD700"; // Золотой цвет при достижении цели
+            }
+        }
+
+        // Запускаем опрос сервера сразу и потом каждые 5 секунд
+        loadUserData();
+        setInterval(loadUserData, 5000);
+
+        // Инфо для дебага (потом удалим)
+        document.getElementById('debug-info').innerText = `ID: ${userId}`;
+    </script>
+</body>
+</html>
