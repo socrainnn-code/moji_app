@@ -114,7 +114,7 @@
         const userId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 909987221;
         
         // 2. Ссылка на API (пока локальная)
-        const API_URL = `https://65371cea0db3f4a9-178-66-129-174.serveousercontent.com/${userId}`;
+        const API_URL = `${window.location.origin}/get_points/${userId}`;
 
         async function loadUserData() {
             try {
@@ -159,4 +159,5 @@
         document.getElementById('debug-info').innerText = `ID: ${userId}`;
     </script>
 </body>
+
 </html>
